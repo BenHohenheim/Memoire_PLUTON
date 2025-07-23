@@ -22,6 +22,24 @@ ENABLE_EMAIL_ALERT = os.getenv("ENABLE_EMAIL_ALERT", "true").lower()
 
 # Initialisation Slack
 slack = WebClient(token=SLACK_TOKEN)
+SLACK_ENABLED = False
+if SLACK_TOKEN and SLACK_CHANNEL:
+    try:
+        resp = slack.auth_test()
+        if resp.get("ok"):
+            logging.info(
+                "\u2705 Slack authentication successful for bot %s",
+                resp.get("user"),
+            )
+            SLACK_ENABLED = True
+        else:
+            logging.error("\u274c Slack token invalide ou non autorisé")
+    except Exception as e:
+        logging.error(f"\u274c Slack auth.test failed: {e}")
+else:
+    logging.warning(
+        "Slack disabled: SLACK_TOKEN or SLACK_CHANNEL missing"
+    )
 
 # Configuration SMTP
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.elasticemail.com")
@@ -73,9 +91,25 @@ def send_email_alert(subject: str, message: str):
 
 def send_slack_alert(message: str):
     """Send alert to Slack channel."""
-    if not (SLACK_TOKEN and SLACK_CHANNEL):
-        raise RuntimeError("Slack configuration incomplete")
-    slack.chat_postMessage(channel=SLACK_CHANNEL, text=message)
+    if not SLACK_ENABLED:
+        logging.warning("Slack disabled: SLACK_TOKEN or SLACK_CHANNEL missing")
+        return
+    try:
+        resp = slack.auth_test()
+    except Exception as e:
+        logging.error(f"\u274c Slack auth.test failed: {e}")
+        return
+    if not resp.get("ok"):
+        logging.error("\u274c Slack token invalide ou non autorisé")
+        return
+    logging.info(
+        "\u2705 Slack authentication successful for bot %s",
+        resp.get("user"),
+    )
+    try:
+        slack.chat_postMessage(channel=SLACK_CHANNEL, text=message)
+    except Exception as e:
+        logging.error(f"Slack notification failed: {e}")
 
 
 def notify_alert(call_id, label, proba, payload):

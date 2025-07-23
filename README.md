@@ -49,3 +49,16 @@ emails sans les envoyer vers de vraies adresses. Il suffit d'exécuter :
 ```
 
 Les emails générés apparaîtront directement dans la sandbox Mailtrap.
+
+## Slack configuration
+
+The feature engine can also send alerts to Slack. Define `SLACK_TOKEN` and
+`SLACK_CHANNEL` in your environment. You can verify the Slack integration
+independently with:
+
+```bash
+docker compose run --rm feature-engine python3 -c 'from feature_engine import send_slack_alert; send_slack_alert("Slack test OK")'
+```
+
+If you obtain an `invalid_auth` error, check that the bot token has the
+`chat:write` scope and reinstall the Slack application if necessary.
