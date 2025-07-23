@@ -5,6 +5,9 @@ import time
 import os
 import requests
 import logging
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from slack_sdk import WebClient
 
 # === CONFIGURATION ===
@@ -16,6 +19,14 @@ SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
 
 # Initialisation Slack
 slack = WebClient(token=SLACK_TOKEN)
+
+# Configuration SMTP
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.elasticemail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "2525"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+ALERT_EMAIL_FROM = os.getenv("ALERT_EMAIL_FROM")
+ALERT_EMAIL_TO = os.getenv("ALERT_EMAIL_TO")
 
 # Ordre attendu des 11 features par le modèle
 FEATURE_NAMES = [
@@ -38,6 +49,25 @@ sessions = {}  # Call-ID -> liste de paquets
 logging.basicConfig(stream=sys.stderr, level=logging.INFO,
                     format='[%(levelname)s] %(message)s')
 
+
+def send_email_alert(subject: str, message: str):
+    """Send alert via SMTP."""
+    if not (ALERT_EMAIL_FROM and ALERT_EMAIL_TO and SMTP_SERVER):
+        raise RuntimeError("SMTP configuration incomplete")
+
+    msg = MIMEMultipart()
+    msg["From"] = ALERT_EMAIL_FROM
+    msg["To"] = ALERT_EMAIL_TO
+    msg["Subject"] = subject
+    msg.attach(MIMEText(message, "plain"))
+
+    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        server.starttls()
+        if SMTP_USERNAME and SMTP_PASSWORD:
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.sendmail(ALERT_EMAIL_FROM, [ALERT_EMAIL_TO], msg.as_string())
+
+
 def notify_alert(call_id, label, proba, payload):
     """
     Envoie une alerte Slack si une session est malveillante.
@@ -51,6 +81,11 @@ def notify_alert(call_id, label, proba, payload):
         logging.info(f"Alert sent for {call_id}")
     except Exception as e:
         logging.error(f"Slack notification failed for {call_id}: {e}")
+
+    try:
+        send_email_alert(f"SIP alert for {call_id}", text)
+    except Exception as e:
+        logging.error(f"Email notification failed for {call_id}: {e}")
 
 
 def process_session(call_id):
@@ -150,112 +185,6 @@ def main():
         else:
             flush_timeout_sessions(ts)
 
-
-if __name__ == "__main__":
-    main()
-import os
-import json
-import time
-import requests
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
-
-# ==========================
-# CONFIG SLACK
-# ==========================
-SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN", "xoxb-9235756128886-9236906689765-lzePQh23MYMKxGINpwRbzWMb")  # Mets ton token Slack ici si besoin
-SLACK_CHANNEL = os.getenv("SLACK_ALERT_CHANNEL", "#sip-alerts")
-
-slack_client = WebClient(token=SLACK_TOKEN)
-
-# ==========================
-# CONFIG SMTP (ElasticEmail)
-# ==========================
-SMTP_SERVER = "smtp.elasticemail.com"
-SMTP_PORT = 2525
-SMTP_USERNAME = "autreuser5@gmail.com"
-SMTP_PASSWORD = "1C1587C036DDF3B6AEA54CA1E31994DB012F"
-
-ALERT_EMAIL_FROM = "autreuser5@gmail.com"
-ALERT_EMAIL_TO = "autreuser5@gmail.com"  # ✅ CHANGE ICI : mets l'email où recevoir les alertes
-
-# ==========================
-# FONCTION : Envoi Slack
-# ==========================
-def send_slack_alert(message):
-    try:
-        slack_client.chat_postMessage(channel=SLACK_CHANNEL, text=message)
-        print(f"[SLACK] Alerte envoyée sur {SLACK_CHANNEL}")
-    except SlackApiError as e:
-        print(f"[SLACK ERROR] {e.response['error']}")
-
-# ==========================
-# FONCTION : Envoi Email
-# ==========================
-def send_email_alert(subject, message):
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = ALERT_EMAIL_FROM
-        msg['To'] = ALERT_EMAIL_TO
-        msg['Subject'] = subject
-        msg.attach(MIMEText(message, 'plain'))
-
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            server.starttls()
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
-            server.sendmail(ALERT_EMAIL_FROM, ALERT_EMAIL_TO, msg.as_string())
-
-        print(f"[EMAIL] Alerte envoyée à {ALERT_EMAIL_TO}")
-
-    except Exception as e:
-        print(f"[EMAIL ERROR] Impossible d'envoyer l'alerte : {e}")
-
-# ==========================
-# FONCTION : Analyse du flux
-# ==========================
-def analyze_packet(packet_data):
-    """
-    Simule une détection d'anomalie.
-    Ici, packet_data est un JSON avec des features.
-    """
-    # Exemple de détection simple : si "flood" dans le message => alerte
-    if "flood" in packet_data.get("label", ""):
-        return True
-    return False
-
-# ==========================
-# MAIN LOOP : écoute des paquets
-# ==========================
-def main():
-    print("✅ Feature Engine en écoute des flux...")
-    while True:
-        # Ici normalement on écoute des messages JSON en temps réel
-        # On simule un paquet reçu pour test
-        fake_packet = {
-            "call_id": f"call_{int(time.time())}",
-            "label": "register_flood",  # Simule une attaque détectée
-            "features": [0.1, 0.5, 0.2]
-        }
-
-        if analyze_packet(fake_packet):
-            alert_msg = (
-                f"🚨 **ALERTE SIP** 🚨\n"
-                f"Call ID: {fake_packet['call_id']}\n"
-                f"Type: {fake_packet['label']}\n"
-                f"Features: {fake_packet['features']}"
-            )
-
-            # 🔔 Envoi Slack
-            send_slack_alert(alert_msg)
-
-            # 🔔 Envoi Email
-            send_email_alert("🚨 ALERTE SIP détectée !", alert_msg)
-
-        # Attendre un peu avant de lire le prochain paquet
-        time.sleep(1)
 
 if __name__ == "__main__":
     main()
