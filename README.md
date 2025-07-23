@@ -1,6 +1,8 @@
 # Memoire PLUTON
 
 This repository contains experimentation scripts for SIP attack detection.
+When an attack is detected, the feature engine now sends both a Slack message
+and an email notification.
 
 ## SMTP configuration
 
@@ -9,6 +11,10 @@ Email alerts require a working SMTP account. Set the following environment varia
 - `SMTP_SERVER` and `SMTP_PORT`
 - `SMTP_USERNAME` and `SMTP_PASSWORD`
 - `ALERT_EMAIL_FROM` and `ALERT_EMAIL_TO`
+- `ENABLE_EMAIL_ALERT` (set to `false` to disable email alerts)
+
+`ENABLE_EMAIL_ALERT` defaults to `true` so emails are sent unless explicitly
+disabled.
 
 For local testing you can use services like [ElasticEmail](https://elasticemail.com) or [Mailtrap](https://mailtrap.io). Ensure these variables are exported or present in your `.env` file.
 
@@ -35,9 +41,8 @@ s'afficher.
 
 ## Tester avec Mailtrap
 
-Si vous souhaitez lever les limitations du service ElasticEmail gratuit,
-vous pouvez utiliser l'environnement de test [Mailtrap](https://mailtrap.io).
-Il suffit d'exécuter :
+Les tests utilisent la sandbox [Mailtrap](https://mailtrap.io) pour recevoir les
+emails sans les envoyer vers de vraies adresses. Il suffit d'exécuter :
 
 ```bash
 ./smtp_run_test.sh
