@@ -11,16 +11,20 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 ALERT_EMAIL_FROM = os.getenv("ALERT_EMAIL_FROM")
 ALERT_EMAIL_TO = os.getenv("ALERT_EMAIL_TO")
 
-missing = []
-if not ALERT_EMAIL_FROM:
-    missing.append("ALERT_EMAIL_FROM")
-if not ALERT_EMAIL_TO:
-    missing.append("ALERT_EMAIL_TO")
-if not SMTP_SERVER:
-    missing.append("SMTP_SERVER")
+required = {
+    "SMTP_SERVER": SMTP_SERVER,
+    "SMTP_USERNAME": SMTP_USERNAME,
+    "ALERT_EMAIL_FROM": ALERT_EMAIL_FROM,
+    "ALERT_EMAIL_TO": ALERT_EMAIL_TO,
+}
 
+missing = [name for name, val in required.items() if not val]
 if missing:
-    print(f"❌ Missing required SMTP configuration: {', '.join(missing)}")
+    print(
+        "❌ Erreur : Les variables "
+        + ", ".join(missing)
+        + " doivent être définies."
+    )
     sys.exit(1)
 
 msg = MIMEMultipart()

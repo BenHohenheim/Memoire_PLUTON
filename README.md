@@ -19,3 +19,16 @@ python3 feature-engine/smtp_test.py
 ```
 
 A ✅ message indicates that the email was accepted by the SMTP server.
+
+## Tester l'envoi d'email avec ElasticEmail
+
+Pour tester rapidement l'envoi des alertes par email avec le service
+ElasticEmail, utilisez le script `smtp_run_test.sh` à la racine du dépôt :
+
+```bash
+./smtp_run_test.sh
+```
+
+Le script exporte automatiquement les variables d'environnement nécessaires puis
+exécute `smtp_test.py`. Si tout est correct, le message `✅ Email sent` doit
+s'afficher.
