@@ -17,6 +17,10 @@ API_URL = os.getenv("PREDICT_URL", default_url)
 SLACK_TOKEN = os.getenv("SLACK_TOKEN")
 SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
 
+logging.info(
+    "Using SLACK_TOKEN %s and channel %s", (SLACK_TOKEN or "")[:10] + "...", SLACK_CHANNEL
+)
+
 # Enable/disable email alerts ("false" to deactivate)
 ENABLE_EMAIL_ALERT = os.getenv("ENABLE_EMAIL_ALERT", "true").lower()
 
@@ -239,4 +243,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if "--test-slack" in sys.argv:
+        print(f"SLACK_TOKEN={SLACK_TOKEN[:10]}... CHANNEL={SLACK_CHANNEL}")
+        send_slack_alert("✅ Slack token test OK")
+    else:
+        main()

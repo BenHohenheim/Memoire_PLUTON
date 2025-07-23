@@ -25,9 +25,11 @@ services:
       - pluton-api
     networks:
       - sipp-net
+    env_file:
+      - .env
     environment:
-      SLACK_TOKEN: "xoxb-XXXXXXXXXXXX"
-      SLACK_CHANNEL: "#sip-alerts"
+      SLACK_TOKEN: ${SLACK_TOKEN}
+      SLACK_CHANNEL: ${SLACK_CHANNEL}
 
   packet-capture:
     image: nicolaka/netshoot
