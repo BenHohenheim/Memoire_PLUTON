@@ -1,16 +1,22 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# CONFIG SLACK
-SLACK_TOKEN="xoxb-9235756128886-9236906689765-lzePQh23MYMKxGINpwRbzWMb"
-SLACK_CHANNEL="#sip-alerts"
+# Load Slack configuration from .env so it matches the running container
+if [ -f .env ]; then
+  # shellcheck disable=SC1091
+  source .env
+fi
+
+# Check that the container uses the same token as .env
+container_token=$(docker compose exec -T feature-engine printenv SLACK_TOKEN | tr -d '\r')
+if [ "$container_token" != "$SLACK_TOKEN" ]; then
+  echo "❌ Slack token mismatch between .env and running container." >&2
+  echo "   Run 'docker compose up -d --force-recreate feature-engine' to reload it." >&2
+  exit 1
+fi
 
 echo "✅ [1/4] Test Slack avant les attaques..."
-docker exec -i feature-engine python3 - <<EOF
-from slack_sdk import WebClient
-slack = WebClient(token="$SLACK_TOKEN")
-slack.chat_postMessage(channel="$SLACK_CHANNEL", text="✅ Test Slack OK depuis feature-engine (avant attaques)")
-EOF
+docker compose exec -T feature-engine python3 feature_engine.py --test-slack
 
 echo "⏳ Attente 3s avant d'envoyer les attaques..."
 sleep 3

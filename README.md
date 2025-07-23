@@ -62,3 +62,10 @@ docker compose run --rm feature-engine python3 -c 'from feature_engine import se
 
 If you obtain an `invalid_auth` error, check that the bot token has the
 `chat:write` scope and reinstall the Slack application if necessary.
+
+After modifying `.env`, recreate the `feature-engine` container so it picks up
+the new values:
+
+```bash
+docker compose up -d --force-recreate feature-engine
+```
