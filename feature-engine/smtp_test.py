@@ -1,5 +1,6 @@
 import os
 import smtplib
+import sys
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -9,6 +10,18 @@ SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 ALERT_EMAIL_FROM = os.getenv("ALERT_EMAIL_FROM")
 ALERT_EMAIL_TO = os.getenv("ALERT_EMAIL_TO")
+
+missing = []
+if not ALERT_EMAIL_FROM:
+    missing.append("ALERT_EMAIL_FROM")
+if not ALERT_EMAIL_TO:
+    missing.append("ALERT_EMAIL_TO")
+if not SMTP_SERVER:
+    missing.append("SMTP_SERVER")
+
+if missing:
+    print(f"❌ Missing required SMTP configuration: {', '.join(missing)}")
+    sys.exit(1)
 
 msg = MIMEMultipart()
 msg["From"] = ALERT_EMAIL_FROM
