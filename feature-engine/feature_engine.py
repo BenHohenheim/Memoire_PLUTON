@@ -17,6 +17,9 @@ API_URL = os.getenv("PREDICT_URL", default_url)
 SLACK_TOKEN = os.getenv("SLACK_TOKEN")
 SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
 
+# Enable/disable email alerts ("false" to deactivate)
+ENABLE_EMAIL_ALERT = os.getenv("ENABLE_EMAIL_ALERT", "true").lower()
+
 # Initialisation Slack
 slack = WebClient(token=SLACK_TOKEN)
 
@@ -68,24 +71,32 @@ def send_email_alert(subject: str, message: str):
         server.sendmail(ALERT_EMAIL_FROM, [ALERT_EMAIL_TO], msg.as_string())
 
 
+def send_slack_alert(message: str):
+    """Send alert to Slack channel."""
+    if not (SLACK_TOKEN and SLACK_CHANNEL):
+        raise RuntimeError("Slack configuration incomplete")
+    slack.chat_postMessage(channel=SLACK_CHANNEL, text=message)
+
+
 def notify_alert(call_id, label, proba, payload):
     """
-    Envoie une alerte Slack si une session est malveillante.
+    Envoie une alerte Slack et Email si une session est malveillante.
     """
     text = (
         f"*ALERTE SIP* call_id={call_id} label={label} "
         f"proba={proba:.2f}\n```{payload}```"
     )
     try:
-        slack.chat_postMessage(channel=SLACK_CHANNEL, text=text)
+        send_slack_alert(text)
         logging.info(f"Alert sent for {call_id}")
     except Exception as e:
         logging.error(f"Slack notification failed for {call_id}: {e}")
 
-    try:
-        send_email_alert(f"SIP alert for {call_id}", text)
-    except Exception as e:
-        logging.error(f"Email notification failed for {call_id}: {e}")
+    if ENABLE_EMAIL_ALERT != "false":
+        try:
+            send_email_alert(f"SIP alert for {call_id}", text)
+        except Exception as e:
+            logging.warning(f"Email notification failed for {call_id}: {e}")
 
 
 def process_session(call_id):
