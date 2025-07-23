@@ -1,0 +1,53 @@
+networks:
+  sipp-net:
+    driver: bridge
+
+volumes:
+  capture-pipe:
+
+services:
+  pluton-api:
+    build:
+      context: ./PLUTON
+      dockerfile: Dockerfile
+    container_name: pluton-api
+    networks:
+      - sipp-net
+    ports:
+      - "8000:8000"
+
+  feature-engine:
+    build:
+      context: ./feature-engine
+      dockerfile: Dockerfile
+    container_name: feature-engine
+    depends_on:
+      - pluton-api
+    networks:
+      - sipp-net
+    environment:
+      SLACK_TOKEN: "xoxb-XXXXXXXXXXXX"
+      SLACK_CHANNEL: "#sip-alerts"
+
+  packet-capture:
+    image: nicolaka/netshoot
+    container_name: packet-capture
+    depends_on:
+      - sip-server
+    command: >
+      sh -c "mkfifo /capture/capture_fifo &&
+             tshark -i eth0 -l -w /capture/capture_fifo"
+    volumes:
+      - capture-pipe:/capture
+    networks:
+      - sipp-net
+
+  sip-server:
+    image: my-sipp-client
+    container_name: sip-server
+    networks:
+      - sipp-net
+    entrypoint: >
+      sipp -sn uas -i 0.0.0.0 -p 5060 -trace_msg -trace_stat
+    ports:
+      - "5060:5060/udp"

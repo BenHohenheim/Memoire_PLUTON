@@ -1,0 +1,14 @@
+{
+  "n_estimators": 350,
+  "max_depth": 9,
+  "learning_rate": 0.10077834568166803,
+  "subsample": 0.7752616423241122,
+  "colsample_bytree": 0.9690830318479461,
+  "gamma": 2.6738492747049825,
+  "min_child_weight": 8,
+  "objective": "multi:softprob",
+  "num_class": 4,
+  "n_jobs": 4,
+  "tree_method": "hist",
+  "eval_metric": "mlogloss"
+}

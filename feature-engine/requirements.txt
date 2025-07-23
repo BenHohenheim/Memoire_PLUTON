@@ -1,0 +1,3 @@
+pandas
+requests
+slack_sdk==3.27.0   # ← nouvelle ligne

