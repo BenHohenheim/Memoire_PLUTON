@@ -163,7 +163,14 @@ def flush_timeout_sessions(now_ts):
 
 def main():
     """Lecture du flux JSON EK sur stdin et traitement session par session."""
-    for line in sys.stdin:
+    print("\u2705 feature-engine is now monitoring SIP traffic…")
+    stdin = sys.stdin
+    while True:
+        line = stdin.readline()
+        if not line:
+            flush_timeout_sessions(time.time())
+            time.sleep(0.5)
+            continue
         try:
             obj = json.loads(line)
         except json.JSONDecodeError:
