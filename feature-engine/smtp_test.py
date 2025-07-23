@@ -39,6 +39,6 @@ try:
         if SMTP_USERNAME and SMTP_PASSWORD:
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
         server.sendmail(ALERT_EMAIL_FROM, [ALERT_EMAIL_TO], msg.as_string())
-    print("✅ Email sent")
+    print("✅ Email envoyé avec succès")
 except Exception as e:
-    print(f"❌ Failed to send email: {e}")
+    print(f"❌ Erreur lors de l'envoi de l'email: {e}")

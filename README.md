@@ -30,5 +30,17 @@ ElasticEmail, utilisez le script `smtp_run_test.sh` à la racine du dépôt :
 ```
 
 Le script exporte automatiquement les variables d'environnement nécessaires puis
-exécute `smtp_test.py`. Si tout est correct, le message `✅ Email sent` doit
+exécute `smtp_test.py`. Si tout est correct, le message `✅ Email envoyé avec succès` doit
 s'afficher.
+
+## Tester avec Mailtrap
+
+Si vous souhaitez lever les limitations du service ElasticEmail gratuit,
+vous pouvez utiliser l'environnement de test [Mailtrap](https://mailtrap.io).
+Il suffit d'exécuter :
+
+```bash
+./smtp_run_test.sh
+```
+
+Les emails générés apparaîtront directement dans la sandbox Mailtrap.
