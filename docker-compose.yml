@@ -38,8 +38,6 @@ services:
   packet-capture:
     image: nicolaka/netshoot
     container_name: packet-capture
-    depends_on:
-      - sip-server
     command: >
       sh -c "mkfifo /capture/capture_fifo && \
              tshark -i any -l -T ek > /capture/capture_fifo"
@@ -47,16 +45,3 @@ services:
       - capture-pipe:/capture
     networks:
       - sipp-net
-
-  sip-server:
-    image: my-sipp-client
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: sip-server
-    networks:
-      - sipp-net
-    entrypoint: >
-      sipp -sn uas -i 0.0.0.0 -p 5060 -trace_msg -trace_stat
-    ports:
-      - "5060:5060/udp"
