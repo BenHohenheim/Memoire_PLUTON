@@ -50,6 +50,9 @@ services:
 
   sip-server:
     image: my-sipp-client
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: sip-server
     networks:
       - sipp-net
