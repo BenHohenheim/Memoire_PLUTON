@@ -1,14 +1,17 @@
 #!/bin/bash
 set -euo pipefail
 
+# ✅ Nom du réseau Docker Compose correct
+NETWORK_NAME="sipp-docker_sipp-net"
+
 # Optional debug mode
 DEBUG=${DEBUG:-false}
 
 debug_check() {
   if [ "$DEBUG" = true ]; then
-    echo "\n\U1F50D [DEBUG] Packet capture output:"
+    echo -e "\n🔍 [DEBUG] Packet capture output:"
     docker compose exec -T packet-capture timeout 5 tcpdump -nn -c 1 -i any udp port 5060 || true
-    echo "\n\U1F50D [DEBUG] Last feature-engine logs:"
+    echo -e "\n🔍 [DEBUG] Last feature-engine logs:"
     docker compose logs --tail=5 feature-engine || true
   fi
 }
@@ -36,33 +39,33 @@ sleep 3
 
 # ✅ [2/4] Attaque INVITE flood
 echo "🚀 [2/4] Lancement attaque INVITE flood..."
-docker run --rm --network sipp-net \
+docker run --rm --network "${NETWORK_NAME}" \
   -v "$(pwd)/scenario":/opt/sipp/scenarios \
   --entrypoint sipp my-sipp-client \
   -sf /opt/sipp/scenarios/invite_flood.xml \
-  -r 5 -m 20 sip-server
+  -r 5 -m 2 sip-server
 echo "✅ Attaque INVITE terminée, Slack devrait recevoir une alerte !"
 debug_check
 sleep 10
 
 # ✅ [3/4] Attaque REGISTER flood
 echo "🚀 [3/4] Lancement attaque REGISTER flood..."
-docker run --rm --network sipp-net \
+docker run --rm --network "${NETWORK_NAME}" \
   -v "$(pwd)/scenario":/opt/sipp/scenarios \
   --entrypoint sipp my-sipp-client \
   -sf /opt/sipp/scenarios/register_flood.xml \
-  -r 5 -m 20 sip-server
+  -r 5 -m 2 sip-server
 echo "✅ Attaque REGISTER terminée, Slack devrait recevoir une alerte !"
 debug_check
 sleep 10
 
 # ✅ [4/4] Attaque OPTIONS flood
 echo "🚀 [4/4] Lancement attaque OPTIONS flood..."
-docker run --rm --network sipp-net \
+docker run --rm --network "${NETWORK_NAME}" \
   -v "$(pwd)/scenario":/opt/sipp/scenarios \
   --entrypoint sipp my-sipp-client \
   -sf /opt/sipp/scenarios/options_flood.xml \
-  -r 5 -m 20 sip-server
+  -r 5 -m 2 sip-server
 echo "✅ Attaque OPTIONS terminée, Slack devrait recevoir une alerte !"
 debug_check
 

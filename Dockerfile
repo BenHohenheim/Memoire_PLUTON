@@ -1,4 +1,3 @@
-# Dockerfile.client
 FROM ubuntu:22.04
 
 RUN apt-get update && \
@@ -7,15 +6,14 @@ RUN apt-get update && \
       iputils-ping wget tcpdump net-tools && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Compilation de SIPp
 RUN git clone https://github.com/SIPp/sipp.git /opt/sipp && \
     cd /opt/sipp && \
     cmake . && \
     make -j"$(nproc)" && \
     make install
 
-# On copie le scénario UAS depuis scenario/
-COPY scenario/uas_scenario.xml /opt/sipp/uas_scenario.xml
-
+# On démarre en mode UAS intégré par défaut
 EXPOSE 5060/udp
 
-ENTRYPOINT ["sipp", "-sf", "/opt/sipp/uas_scenario.xml", "-p", "5060", "-trace_msg"]
+ENTRYPOINT ["sipp", "-sn", "uas", "-i", "0.0.0.0", "-p", "5060", "-trace_msg", "-trace_stat"]

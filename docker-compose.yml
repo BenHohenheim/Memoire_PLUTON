@@ -16,6 +16,29 @@ services:
     ports:
       - "8000:8000"
 
+  packet-capture:
+    image: nicolaka/netshoot
+    container_name: packet-capture
+    command: >
+      sh -c '
+        # ✅ Crée le FIFO uniquement s’il n’existe pas
+        if [ ! -p /capture/capture_fifo ]; then
+          echo "[INFO] Creating FIFO...";
+          mkfifo /capture/capture_fifo;
+        else
+          echo "[INFO] FIFO already exists";
+        fi;
+
+        echo "[INFO] Starting tshark JSON capture...";
+        # ✅ Capture uniquement le SIP (UDP 5060) et sort en JSONL
+        exec tshark -i eth0 -l -T ek udp port 5060 > /capture/capture_fifo
+      '
+    volumes:
+      - capture-pipe:/capture
+    networks:
+      - sipp-net
+    restart: unless-stopped
+
   feature-engine:
     build:
       context: ./feature-engine
@@ -23,25 +46,42 @@ services:
     container_name: feature-engine
     depends_on:
       - pluton-api
+      - packet-capture    # ✅ attend packet-capture avant de démarrer
     networks:
       - sipp-net
-    env_file:
-      - .env
     environment:
       SLACK_TOKEN: ${SLACK_TOKEN}
       SLACK_CHANNEL: ${SLACK_CHANNEL}
+      SMTP_SERVER: ${SMTP_SERVER}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      ALERT_EMAIL_FROM: ${ALERT_EMAIL_FROM}
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO}
+      ENABLE_EMAIL_ALERT: ${ENABLE_EMAIL_ALERT}
     volumes:
       - capture-pipe:/capture
     command: >
-      sh -c "cat /capture/capture_fifo | ./feature_engine.py"
+      sh -c '
+        echo "⏳ Waiting for FIFO from packet-capture...";
+        # ✅ Attente active jusqu’à ce que le FIFO soit dispo
+        until [ -p /capture/capture_fifo ]; do
+          echo "[INFO] Waiting for /capture/capture_fifo...";
+          sleep 1;
+        done;
+        echo "✅ FIFO ready, starting feature_engine.py";
+        # ✅ Lecture JSON en continu
+        exec ./feature_engine.py < /capture/capture_fifo
+      '
+    restart: unless-stopped
 
-  packet-capture:
-    image: nicolaka/netshoot
-    container_name: packet-capture
-    command: >
-      sh -c "mkfifo /capture/capture_fifo && \
-             tshark -i any -l -T ek > /capture/capture_fifo"
-    volumes:
-      - capture-pipe:/capture
+  sip-server:
+    build:
+      context: .
+      dockerfile: Dockerfile   # <— ton Dockerfile UAS SIPp
+    image: my-sipp-client
+    container_name: sip-server
     networks:
       - sipp-net
+    ports:
+      - "5060:5060/udp"
