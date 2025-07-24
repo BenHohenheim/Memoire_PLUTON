@@ -30,6 +30,10 @@ services:
     environment:
       SLACK_TOKEN: ${SLACK_TOKEN}
       SLACK_CHANNEL: ${SLACK_CHANNEL}
+    volumes:
+      - capture-pipe:/capture
+    command: >
+      sh -c "cat /capture/capture_fifo | ./feature_engine.py"
 
   packet-capture:
     image: nicolaka/netshoot
@@ -37,8 +41,8 @@ services:
     depends_on:
       - sip-server
     command: >
-      sh -c "mkfifo /capture/capture_fifo &&
-             tshark -i eth0 -l -w /capture/capture_fifo"
+      sh -c "mkfifo /capture/capture_fifo && \
+             tshark -i any -l -T ek > /capture/capture_fifo"
     volumes:
       - capture-pipe:/capture
     networks:
