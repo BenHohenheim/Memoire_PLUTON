@@ -5,6 +5,7 @@ import time
 import os
 import requests
 import logging
+import re
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -69,6 +70,23 @@ FEATURE_NAMES = [
 ]
 
 sessions = {}  # Call-ID -> liste de paquets
+
+# SIP methods we recognize when parsing packets
+SIP_VERBS = [
+    "INVITE",
+    "REGISTER",
+    "OPTIONS",
+    "BYE",
+    "CANCEL",
+    "ACK",
+    "PRACK",
+    "UPDATE",
+    "MESSAGE",
+    "SUBSCRIBE",
+    "NOTIFY",
+    "REFER",
+    "INFO",
+]
 
 # Configuration du logger
 logging.basicConfig(stream=sys.stderr, level=logging.INFO,
@@ -226,7 +244,24 @@ def main():
         if not call_id:
             continue
 
-        method = sip.get("sip_sip_CSeq_method") or sip.get("sip_sip_Method", "")
+        method = (
+            sip.get("sip_sip_CSeq_method")
+            or sip.get("sip_sip_Method", "")
+        )
+        method = str(method).upper()
+        if not method:
+            info = sip.get("_ws.col.Info") or sip.get("sip_sip_Request-Line", "")
+            info_upper = str(info).upper()
+            for verb in SIP_VERBS:
+                if verb in info_upper:
+                    method = verb
+                    break
+        if not method:
+            logging.warning(f"Cannot determine SIP method for {call_id}")
+            continue
+        if method not in SIP_VERBS:
+            logging.warning(f"Unknown SIP method {method} for {call_id}")
+            continue
         ts     = float(
             frame.get("frame_frame_time_relative", frame.get("frame_frame_time_delta", 0))
         )
