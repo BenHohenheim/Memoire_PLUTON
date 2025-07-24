@@ -223,10 +223,14 @@ def main():
         ipsec = layers.get("ip", {})
 
         call_id = sip.get("sip_sip_Call-ID") or sip.get("sip_sip_call_id_generated")
+        if call_id:
+            call_id = str(call_id).strip()
         if not call_id:
             continue
 
         method = sip.get("sip_sip_CSeq_method") or sip.get("sip_sip_Method", "")
+        method = str(method).strip().upper()
+        logging.debug("Parsed SIP method %s for %s", method, call_id)
         ts     = float(
             frame.get("frame_frame_time_relative", frame.get("frame_frame_time_delta", 0))
         )
